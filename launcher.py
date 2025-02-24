@@ -5,11 +5,15 @@ import json
 import os
 import pyautogui
 import time
+import requests
+from packaging import version
 from PIL import Image, ImageTk
 
 # Percorso del file di configurazione
 config_file = "launcher_config.json"
 server_id = "85568392932298269/101"
+current_version = "1.0.0"  # Versione corrente del launcher
+repo_url = "https://api.github.com/repos/bitpredator/bpt.launcher/releases/latest"  # URL API GitHub per l'ultima release
 
 def load_config():
     if os.path.exists(config_file):
@@ -36,10 +40,8 @@ def launch_game():
             # Simula l'interazione con l'interfaccia utente per connettersi al server
             connect_to_server(server_id)
             
-            # Chiudi il launcher (opzionale, rimuovi se non desiderato)
+            # Chiudi il launcher
             root.destroy()
-        except FileNotFoundError:
-            messagebox.showerror("Errore", "Il file eseguibile del gioco non è stato trovato.")
         except Exception as e:
             messagebox.showerror("Errore", f"Non è stato possibile avviare il gioco: {e}")
     else:
@@ -75,11 +77,35 @@ def open_settings():
     path_entry = tk.Entry(settings_window, width=50)
     path_entry.pack(pady=5)
 
-    browse_button = tk.Button(settings_window, text="Sfoglia", command=lambda: path_entry.insert(0, filedialog.askopenfilename(filetypes=[("Executable files", "*.exe")])))
+    browse_button = tk.Button(settings_window, text="Sfoglia", command=lambda: path_entry.insert(0, filedialog.askopenfilename()))
     browse_button.pack(pady=5)
 
     save_button = tk.Button(settings_window, text="Salva", command=save_settings)
     save_button.pack(pady=10)
+
+def check_for_updates():
+    try:
+        response = requests.get(repo_url)
+        response.raise_for_status()
+        latest_release = response.json()
+        latest_version = latest_release["tag_name"]
+        if version.parse(latest_version) > version.parse(current_version):
+            download_url = latest_release["assets"][0]["browser_download_url"]
+            if messagebox.askyesno("Aggiornamento Disponibile", f"È disponibile una nuova versione ({latest_version}). Vuoi aggiornare?"):
+                download_and_install_update(download_url)
+    except Exception as e:
+        messagebox.showerror("Errore", f"Errore durante il controllo degli aggiornamenti: {e}")
+
+def download_and_install_update(download_url):
+    try:
+        response = requests.get(download_url)
+        response.raise_for_status()
+        with open("update.exe", "wb") as f:
+            f.write(response.content)
+        subprocess.Popen(["update.exe"])
+        root.destroy()
+    except Exception as e:
+        messagebox.showerror("Errore", f"Errore durante il download dell'aggiornamento: {e}")
 
 root = tk.Tk()
 root.title("Launcher Euro Truck Simulator 2")
@@ -98,7 +124,7 @@ launch_button.pack(pady=10)
 settings_button = tk.Button(root, text="Impostazioni", command=open_settings)
 settings_button.pack(pady=10)
 
-update_button = tk.Button(root, text="Controlla Aggiornamenti", command=lambda: messagebox.showinfo("Aggiornamenti", "Nessun aggiornamento disponibile."))
+update_button = tk.Button(root, text="Controlla Aggiornamenti", command=check_for_updates)
 update_button.pack(pady=10)
 
 root.mainloop()
