@@ -11,7 +11,7 @@ from packaging import version
 # Percorso del file di configurazione
 config_file = "launcher_config.json"
 server_id = "85568392932298269/101"
-current_version = "1.0.0"  # Versione corrente del launcher
+current_version = "1.0.2"  # Versione corrente del launcher
 repo_url = "https://api.github.com/repos/bitpredator/bpt.launcher/releases/latest"  # URL API GitHub per l'ultima release
 
 def load_config():
@@ -97,10 +97,17 @@ def check_for_updates():
 
 def download_and_install_update(download_url):
     try:
+        # Rimuovi la versione obsoleta se esiste
+        if os.path.exists("update.exe"):
+            os.remove("update.exe")
+        
+        # Scarica la nuova versione
         response = requests.get(download_url)
         response.raise_for_status()
         with open("update.exe", "wb") as f:
             f.write(response.content)
+        
+        # Avvia l'installazione della nuova versione
         subprocess.Popen(["update.exe"])
         root.destroy()
     except Exception as e:
