@@ -11,3 +11,5 @@ Questo comando installerà tutte le librerie specificate nel file `requirements.
 Se `tkinter` non viene installato tramite `pip`, è perché è una libreria standard di Python e dovrebbe essere già inclusa nella tua installazione di Python. Se non è presente, potrebbe essere necessario installare un pacchetto specifico per il tuo sistema operativo.
 
 Dopo aver eseguito questi passaggi, tutte le dipendenze richieste dovrebbero essere installate e il tuo progetto dovrebbe funzionare correttamente.
+
+pyinstaller --onefile --windowed --icon=img/ico.ico launcher.py

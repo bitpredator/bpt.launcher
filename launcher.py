@@ -3,16 +3,16 @@ from tkinter import messagebox, filedialog
 import subprocess
 import json
 import os
-import pyautogui
 import time
 import requests
 from packaging import version
+import pyautogui
 
 # Percorso del file di configurazione
-config_file = "launcher_config.json"
-server_id = "85568392932298269/101"
+config_file = "config/launcher_config.json"
 current_version = "1.0.2"  # Versione corrente del launcher
 repo_url = "https://api.github.com/repos/bitpredator/bpt.launcher/releases/latest"  # URL API GitHub per l'ultima release
+server_id = "85568392932298269/101"  # ID del server
 
 def load_config():
     if os.path.exists(config_file):
@@ -22,6 +22,7 @@ def load_config():
         return {}
 
 def save_config(config):
+    os.makedirs(os.path.dirname(config_file), exist_ok=True)
     with open(config_file, "w") as f:
         json.dump(config, f)
 
@@ -34,10 +35,10 @@ def launch_game():
             subprocess.Popen([game_path, "-dx11"])
             
             # Attendi che il gioco si avvii (regola il tempo di attesa in base alle tue esigenze)
-            time.sleep(10)
+            time.sleep(30)  # Aumenta il tempo di attesa se necessario
             
-            # Simula l'interazione con l'interfaccia utente per connettersi al server
-            connect_to_server(server_id)
+            # Simula l'interazione con l'interfaccia utente per cercare il server
+            search_server(server_id)
             
             # Chiudi il launcher
             root.destroy()
@@ -46,9 +47,9 @@ def launch_game():
     else:
         messagebox.showerror("Errore", "Percorso del gioco non valido. Per favore, seleziona il percorso corretto nelle impostazioni.")
 
-def connect_to_server(server_id):
+def search_server(server_id):
     # Simula i tasti per aprire il menu di connessione (modifica in base al gioco)
-    pyautogui.press('esc')
+    pyautogui.press('-')
     time.sleep(1)
     
     # Simula la digitazione dell'ID del server
@@ -117,7 +118,10 @@ root = tk.Tk()
 root.title("Launcher Euro Truck Simulator 2")
 
 # Imposta l'icona personalizzata
-root.iconbitmap("img/ico.ico")
+try:
+    root.iconbitmap("img/ico.ico")
+except tk.TclError:
+    print("Icon file not found, using default icon.")
 
 launch_button = tk.Button(root, text="Avvia Gioco", command=launch_game)
 launch_button.pack(pady=10)
