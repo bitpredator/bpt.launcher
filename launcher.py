@@ -26,8 +26,8 @@ def launch_game():
     game_path = config.get("game_path")
     if game_path and os.path.exists(game_path):
         try:
-            # Avvia il gioco
-            subprocess.Popen([game_path])
+            # Avvia il gioco con DirectX 11
+            subprocess.Popen([game_path, "-dx11"])
             
             # Attendi che il gioco si avvii (regola il tempo di attesa in base alle tue esigenze)
             time.sleep(10)
