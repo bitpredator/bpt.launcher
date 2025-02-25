@@ -2,3 +2,4 @@ pyautogui
 requests
 Pillow
 packaging
+requests
