@@ -32,7 +32,7 @@ jobs:
     - name: Archive build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: launcher-exe
+        name: launcher.exe
         path: dist/launcher.exe
 
   release:
@@ -46,7 +46,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: launcher-exe
+        name: launcher.exe
         path: .
 
     - name: Create Release
