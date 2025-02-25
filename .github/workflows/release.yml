@@ -2,70 +2,29 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: launcher.exe
+          path: .
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-
-    - name: Build executable
-      run: |
-        pyinstaller --onefile launcher.py
-        ls dist
-
-    - name: Archive build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: launcher.exe
-        path: dist/launcher.exe
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: launcher.exe
-        path: .
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release ${{ github.run_number }}
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: launcher.exe
-        asset_name: launcher.exe
-        asset_content_type: application/octet-stream
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v8
+          release_name: Release 8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
