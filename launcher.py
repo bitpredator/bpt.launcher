@@ -109,6 +109,9 @@ def download_and_install_update(download_url):
 root = tk.Tk()
 root.title("Launcher Euro Truck Simulator 2")
 
+# Imposta l'icona personalizzata
+root.iconbitmap("img/ico.ico")
+
 launch_button = tk.Button(root, text="Avvia Gioco", command=launch_game)
 launch_button.pack(pady=10)
 
