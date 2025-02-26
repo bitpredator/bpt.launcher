@@ -12,7 +12,7 @@ from PIL import Image, ImageTk
 
 # Percorso del file di configurazione
 config_file = "config/launcher_config.json"
-current_version = "1.0.2"  # Versione corrente del launcher
+current_version = "1.0.3"  # Versione corrente del launcher
 repo_url = "https://api.github.com/repos/bitpredator/bpt.launcher/releases/latest"  # URL API GitHub per l'ultima release
 server_id = "85568392932298269/101"  # ID del server
 
