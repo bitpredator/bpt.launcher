@@ -3,3 +3,6 @@ requests
 Pillow
 packaging
 requests
+psutil
+pyarmor
+pyinstaller

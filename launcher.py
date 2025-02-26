@@ -7,6 +7,8 @@ import time
 import requests
 from packaging import version
 import pyautogui
+import psutil
+from PIL import Image, ImageTk
 
 # Percorso del file di configurazione
 config_file = "config/launcher_config.json"
@@ -26,7 +28,18 @@ def save_config(config):
     with open(config_file, "w") as f:
         json.dump(config, f)
 
+def is_steam_running():
+    """Controlla se Steam è in esecuzione."""
+    for process in psutil.process_iter(['name']):
+        if process.info['name'] == 'steam.exe':
+            return True
+    return False
+
 def launch_game():
+    if not is_steam_running():
+        messagebox.showerror("Errore", "Steam non è avviato. Per favore, avvia Steam prima di avviare il gioco.")
+        return
+
     config = load_config()
     game_path = config.get("game_path")
     if game_path and os.path.exists(game_path):
@@ -114,22 +127,41 @@ def download_and_install_update(download_url):
     except Exception as e:
         messagebox.showerror("Errore", f"Errore durante il download dell'aggiornamento: {e}")
 
+# Crea la finestra principale
 root = tk.Tk()
 root.title("Launcher Euro Truck Simulator 2")
+root.geometry('800x600')  # Imposta la finestra a 800x600 pixel
+root.resizable(False, False)  # Blocca il ridimensionamento della finestra
+
+# Carica l'immagine di sfondo
+background_image_path = os.path.join(os.path.dirname(__file__), "img", "background.png")
+if os.path.exists(background_image_path):
+    background_image = Image.open(background_image_path)
+    background_image = background_image.resize((800, 600), Image.LANCZOS)
+    background_photo = ImageTk.PhotoImage(background_image)
+else:
+    messagebox.showerror("Errore", f"Immagine di sfondo non trovata: {background_image_path}")
+    root.destroy()
+
+# Crea un canvas e aggiungi l'immagine di sfondo
+canvas = tk.Canvas(root, width=800, height=600)
+canvas.pack(fill="both", expand=True)
+canvas.create_image(0, 0, image=background_photo, anchor="nw")
 
 # Imposta l'icona personalizzata
 try:
-    root.iconbitmap("img/ico.ico")
+    root.iconbitmap(os.path.join(os.path.dirname(__file__), "img", "ico.ico"))
 except tk.TclError:
     print("Icon file not found, using default icon.")
 
+# Aggiungi i pulsanti al canvas
 launch_button = tk.Button(root, text="Avvia Gioco", command=launch_game)
-launch_button.pack(pady=10)
+canvas.create_window(400, 200, window=launch_button)  # Posiziona il pulsante al centro
 
 settings_button = tk.Button(root, text="Impostazioni", command=open_settings)
-settings_button.pack(pady=10)
+canvas.create_window(400, 300, window=settings_button)  # Posiziona il pulsante al centro
 
 update_button = tk.Button(root, text="Controlla Aggiornamenti", command=check_for_updates)
-update_button.pack(pady=10)
+canvas.create_window(400, 400, window=update_button)  # Posiziona il pulsante al centro
 
 root.mainloop()

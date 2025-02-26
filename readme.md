@@ -13,3 +13,6 @@ Se `tkinter` non viene installato tramite `pip`, è perché è una libreria stan
 Dopo aver eseguito questi passaggi, tutte le dipendenze richieste dovrebbero essere installate e il tuo progetto dovrebbe funzionare correttamente.
 
 pyinstaller --onefile --windowed --icon=img/ico.ico launcher.py
+
+Offusca il codice con:
+pyarmor pack -x " --exclude tkinter --exclude PIL" -e " --onefile" launcher.py
