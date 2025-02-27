@@ -9,17 +9,20 @@ from packaging import version
 import pyautogui
 import psutil
 from PIL import Image, ImageTk
+from cryptography.fernet import Fernet
+import uuid
+import hashlib
 
 # Percorso del file di configurazione
 config_file = "config/launcher_config.json"
-current_version = "1.0.3"  # Versione corrente del launcher
+current_version = "1.0.4"  # Versione corrente del launcher
 repo_url = "https://api.github.com/repos/bitpredator/bpt.launcher/releases/latest"  # URL API GitHub per l'ultima release
-server_id = "85568392932298269/101"  # ID del server
 
 def load_config():
     if os.path.exists(config_file):
         with open(config_file, "r") as f:
-            return json.load(f)
+            config = json.load(f)
+            return config
     else:
         return {}
 
@@ -35,6 +38,21 @@ def is_steam_running():
             return True
     return False
 
+def update_convoy_size():
+    config_path = os.path.join(os.path.expanduser("~"), "Documents", "Euro Truck Simulator 2", "config.cfg")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as file:
+            lines = file.readlines()
+        
+        with open(config_path, "w") as file:
+            for line in lines:
+                if 'uset g_max_convoy_size' in line:
+                    file.write('uset g_max_convoy_size "128"\n')
+                else:
+                    file.write(line)
+    else:
+        messagebox.showerror("Errore", f"File config.cfg non trovato: {config_path}")
+
 def launch_game():
     if not is_steam_running():
         messagebox.showerror("Errore", "Steam non è avviato. Per favore, avvia Steam prima di avviare il gioco.")
@@ -42,16 +60,17 @@ def launch_game():
 
     config = load_config()
     game_path = config.get("game_path")
+
     if game_path and os.path.exists(game_path):
         try:
+            # Aggiorna il parametro del convoglio
+            update_convoy_size()
+            
             # Avvia il gioco con DirectX 11
             subprocess.Popen([game_path, "-dx11"])
             
             # Attendi che il gioco si avvii (regola il tempo di attesa in base alle tue esigenze)
             time.sleep(30)  # Aumenta il tempo di attesa se necessario
-            
-            # Simula l'interazione con l'interfaccia utente per cercare il server
-            search_server(server_id)
             
             # Chiudi il launcher
             root.destroy()
@@ -59,18 +78,6 @@ def launch_game():
             messagebox.showerror("Errore", f"Non è stato possibile avviare il gioco: {e}")
     else:
         messagebox.showerror("Errore", "Percorso del gioco non valido. Per favore, seleziona il percorso corretto nelle impostazioni.")
-
-def search_server(server_id):
-    # Simula i tasti per aprire il menu di connessione (modifica in base al gioco)
-    pyautogui.press('-')
-    time.sleep(1)
-    
-    # Simula la digitazione dell'ID del server
-    pyautogui.typewrite(server_id)
-    time.sleep(1)
-    
-    # Simula il tasto Invio per confermare la connessione
-    pyautogui.press('enter')
 
 def open_settings():
     def save_settings():
@@ -112,20 +119,122 @@ def check_for_updates():
 def download_and_install_update(download_url):
     try:
         # Rimuovi la versione obsoleta se esiste
-        if os.path.exists("update.exe"):
-            os.remove("update.exe")
+        if os.path.exists("launcher.exe"):
+            os.remove("launcher.exe")
         
         # Scarica la nuova versione
         response = requests.get(download_url)
         response.raise_for_status()
-        with open("update.exe", "wb") as f:
+        with open("launcher.exe", "wb") as f:
             f.write(response.content)
         
+        # Verifica se il file scaricato è compatibile
+        if not is_compatible_executable("launcher.exe"):
+            messagebox.showerror("Errore", "Il file launcher.exe scaricato non è compatibile con il sistema operativo a 64 bit.")
+            return
+        
         # Avvia l'installazione della nuova versione
-        subprocess.Popen(["update.exe"])
+        subprocess.Popen(["launcher.exe"])
         root.destroy()
     except Exception as e:
         messagebox.showerror("Errore", f"Errore durante il download dell'aggiornamento: {e}")
+
+def is_compatible_executable(file_path):
+    # Funzione di esempio per verificare la compatibilità del file eseguibile
+    # Nota: Questa funzione è solo un esempio e potrebbe non funzionare correttamente per tutti i file eseguibili
+    try:
+        with open(file_path, "rb") as f:
+            header = f.read(2)
+            return header == b'MZ'  # Controlla se il file è un eseguibile Windows
+    except Exception:
+        return False
+
+def send_discord_message(username):
+    """Invia un messaggio al webhook di Discord con l'username."""
+    data = {
+        "content": f"Camionista {username} ha effettuato la connessione."
+    }
+    response = requests.post(discord_webhook_url, json=data)
+    if response.status_code != 204:
+        messagebox.showerror("Errore", "Non è stato possibile inviare il messaggio al webhook di Discord.")
+
+def hash_password(password):
+    """Restituisce l'hash SHA-256 della password."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def center_window(window, width=300, height=300):
+    """Centra la finestra sullo schermo."""
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+    window.geometry(f'{width}x{height}+{x}+{y}')
+
+def set_initial_credentials():
+    """Imposta il nickname e la password al primo avvio."""
+    config = load_config()
+    if "username" in config and "password" in config:
+        return
+
+    def save_credentials():
+        username = username_entry.get()
+        password = password_entry.get()
+        if username and password:
+            config["username"] = username
+            config["password"] = hash_password(password)
+            save_config(config)
+            credentials_window.destroy()
+            prompt_username()
+        else:
+            messagebox.showerror("Errore", "Entrambi i campi sono obbligatori.")
+
+    credentials_window = tk.Toplevel(root)
+    credentials_window.title("Imposta Credenziali")
+    center_window(credentials_window, 300, 300)
+    credentials_window.resizable(False, False)
+
+    tk.Label(credentials_window, text="Imposta il tuo nickname e password:").pack(pady=10)
+    tk.Label(credentials_window, text="Nickname:").pack(pady=5)
+    username_entry = tk.Entry(credentials_window, width=30)
+    username_entry.pack(pady=5)
+    tk.Label(credentials_window, text="Password:").pack(pady=5)
+    password_entry = tk.Entry(credentials_window, width=30, show="*")
+    password_entry.pack(pady=5)
+
+    save_button = tk.Button(credentials_window, text="Salva", command=save_credentials)
+    save_button.pack(pady=10)
+
+def prompt_username():
+    config = load_config()
+    if "username" not in config or "password" not in config:
+        set_initial_credentials()
+        return
+
+    def check_credentials():
+        username = username_entry.get()
+        password = password_entry.get()
+        if username == config["username"] and hash_password(password) == config["password"]:
+            send_discord_message(username)
+            login_window.destroy()
+            launch_button.config(state=tk.NORMAL)
+        else:
+            messagebox.showerror("Errore", "Nome utente o password errati. Riprova.")
+
+    login_window = tk.Toplevel(root)
+    login_window.title("Login")
+    center_window(login_window, 300, 300)
+    login_window.resizable(False, False)
+
+    tk.Label(login_window, text="Inserisci nome utente e password:").pack(pady=10)
+    tk.Label(login_window, text="Nome utente:").pack(pady=5)
+    username_entry = tk.Entry(login_window, width=30)
+    username_entry.pack(pady=5)
+    tk.Label(login_window, text="Password:").pack(pady=5)
+    password_entry = tk.Entry(login_window, width=30, show="*")
+    password_entry.pack(pady=5)
+
+    check_button = tk.Button(login_window, text="Verifica", command=check_credentials)
+    check_button.pack(pady=10)
 
 # Crea la finestra principale
 root = tk.Tk()
@@ -155,7 +264,7 @@ except tk.TclError:
     print("Icon file not found, using default icon.")
 
 # Aggiungi i pulsanti al canvas
-launch_button = tk.Button(root, text="Avvia Gioco", command=launch_game)
+launch_button = tk.Button(root, text="Avvia Gioco", command=launch_game, state=tk.DISABLED)
 canvas.create_window(400, 200, window=launch_button)  # Posiziona il pulsante al centro
 
 settings_button = tk.Button(root, text="Impostazioni", command=open_settings)
@@ -163,5 +272,8 @@ canvas.create_window(400, 300, window=settings_button)  # Posiziona il pulsante 
 
 update_button = tk.Button(root, text="Controlla Aggiornamenti", command=check_for_updates)
 canvas.create_window(400, 400, window=update_button)  # Posiziona il pulsante al centro
+
+# Prompt per il nome utente
+root.after(100, prompt_username)
 
 root.mainloop()

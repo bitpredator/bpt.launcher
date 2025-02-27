@@ -2,3 +2,4 @@
 build
 launcher.spec
 dist
+__pycache__
